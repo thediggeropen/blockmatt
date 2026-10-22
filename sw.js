@@ -1,6 +1,6 @@
 // Offline-Fassung (Home-Bildschirm): Seite + Symbole beim ersten Besuch merken. Seite immer zuerst frisch aus dem Netz
 // (Updates kommen von selbst), ohne Netz aus dem Speicher. Bestenliste/Duell gehen nicht über diesen Speicher.
-const CACHE = 'blockmatt-1fb3346eaf52';
+const CACHE = 'blockmatt-bc26233c4441';
 const FILES = ['./', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
