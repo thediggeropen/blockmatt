@@ -22,7 +22,7 @@
 html, body { height: calc(100% + var(--ios-gap)); margin: 0; overflow: hidden; background: var(--sky); color: var(--fg); }
 #scene { position: fixed; inset: 0; width: 100%; height: calc(100% + var(--ios-gap)); display: block; touch-action: none; }
 #ui {
-  position: fixed; inset: 0; bottom: calc(0px - var(--ios-gap)); pointer-events: none; box-sizing: border-box;
+  position: fixed; inset: 0; pointer-events: none; box-sizing: border-box;
   padding: env(safe-area-inset-top, 0px) max(16px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(16px, env(safe-area-inset-left, 0px));
   font: 15px/1.45 var(--body);
 }
@@ -48,7 +48,7 @@ html, body { height: calc(100% + var(--ios-gap)); margin: 0; overflow: hidden; b
 .muted { color: var(--muted); margin: 0; font-size: 14px; }
 
 .screen, .backdrop {
-  position: fixed; inset: 0; bottom: calc(0px - var(--ios-gap)); pointer-events: auto; overflow-y: auto; box-sizing: border-box; display: grid; place-items: center;
+  position: fixed; inset: 0; pointer-events: auto; overflow-y: auto; box-sizing: border-box; display: grid; place-items: center;
   padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
 }
 .screen { background: linear-gradient(rgba(6, 8, 7, 0.35), rgba(6, 8, 7, 0.7)); }
@@ -147,7 +147,7 @@ html, body { height: calc(100% + var(--ios-gap)); margin: 0; overflow: hidden; b
 .duel-chip b { font: 400 13px var(--display); }
 .duel-chip small { font-size: 12px; color: var(--muted); }
 .duel-code { margin: 0; text-align: center; font: 400 34px var(--display); letter-spacing: 0.15em; color: var(--gold); }
-.camflash { position: fixed; inset: 0; bottom: calc(0px - var(--ios-gap)); background: #fff; pointer-events: none; animation: camflash 0.6s ease-out forwards; }
+.camflash { position: fixed; inset: 0; background: #fff; pointer-events: none; animation: camflash 0.6s ease-out forwards; }
 @keyframes camflash { from { opacity: 0.95; } to { opacity: 0; } }
 .gameover .line { margin: 0; font-size: 17px; text-wrap: balance; }
 .events { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; color: var(--gold); font-family: var(--display); font-size: 13px; }
@@ -167,12 +167,12 @@ textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, 'SF
 .toggle input:checked { background: rgba(123, 211, 90, 0.22); box-shadow: inset 0 0 0 2px var(--accent), inset 3px 3px 0 rgba(0, 0, 0, 0.3); }
 .toggle input:checked::before { transform: translateX(22px); background: var(--accent); }
 .toggle input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.hud-view { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px) - var(--ios-gap)); }
-.rotate-hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px) - var(--ios-gap)); display: flex; align-items: center; gap: 10px; white-space: nowrap;
+.hud-view { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.rotate-hint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(76px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 10px; white-space: nowrap;
   background: var(--panel); box-shadow: 0 0 0 2px var(--frame), inset 0 -4px 0 var(--lo); padding: 8px 14px 11px; pointer-events: none; animation: hint-sway 1.6s ease-in-out infinite; }
 .rotate-hint .hand { width: 18px; height: 22px; background: var(--fg); clip-path: polygon(30% 0, 55% 0, 55% 40%, 100% 45%, 100% 100%, 20% 100%, 0 60%, 30% 55%); }
 @keyframes hint-sway { 0%, 100% { margin-left: -14px; } 50% { margin-left: 14px; } }
-.perf { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px) - var(--ios-gap)); font-size: 12px; background: var(--panel); box-shadow: 0 0 0 2px var(--frame); padding: 4px 8px; pointer-events: none; }
+.perf { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); font-size: 12px; background: var(--panel); box-shadow: 0 0 0 2px var(--frame); padding: 4px 8px; pointer-events: none; }
 .field { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; }
 /* Einstellungen: Gruppen als eingelassene Felder, Auswahl als Block-Knöpfe */
 .settings .group { display: grid; padding: 8px 12px 10px; background: rgba(0, 0, 0, 0.3);
@@ -257,7 +257,7 @@ textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, 'SF
 .slider input::-moz-range-thumb { width: 16px; height: 28px; border: 0; border-radius: 0; background: #d9dfd3; box-shadow: 0 0 0 2px #000, inset 0 3px 0 #fff, inset 0 -5px 0 #8a9286; }
 .slider input:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
 .toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(max(24px, env(safe-area-inset-bottom, 0px) + 12px) - var(--ios-gap));
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 12px));
   max-width: calc(100% - 32px); box-sizing: border-box; padding: 10px 16px 13px; background: var(--panel); box-shadow: 0 0 0 2px var(--frame), inset 0 3px 0 var(--hi), inset 0 -4px 0 var(--lo);
   transition: opacity 0.4s; text-align: center;
 }
@@ -275,13 +275,13 @@ textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, 'SF
 .badge small { display: block; font-size: 11px; color: var(--muted); }
 .badge .when { font-size: 11px; color: var(--muted); white-space: nowrap; }
 /* Intro: dunkler Schirm bis zum ersten Tipp, danach unten ein leiser Hinweis */
-.tap-start { position: fixed; inset: 0; bottom: calc(0px - var(--ios-gap)); pointer-events: auto; cursor: pointer; display: grid; place-content: center; justify-items: center; gap: 6px;
+.tap-start { position: fixed; inset: 0; pointer-events: auto; cursor: pointer; display: grid; place-content: center; justify-items: center; gap: 6px;
   background: radial-gradient(rgba(6, 8, 7, 0.55), rgba(6, 8, 7, 0.9)); transition: opacity 0.4s; outline: none; }
 .tap-start.out { opacity: 0; }
 .tap-start .blink { margin: 0; font: 400 clamp(20px, 6vw, 28px) var(--display); color: var(--gold); text-shadow: 0 3px 0 var(--gold-deep), 0 5px 0 #000; animation: blink 1.4s linear infinite; }
 .tap-start small { color: var(--muted); font-family: var(--display); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
 @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.35; } }
-.intro-hint { position: fixed; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px) - var(--ios-gap)); margin: 0; text-align: center; pointer-events: none;
+.intro-hint { position: fixed; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); margin: 0; text-align: center; pointer-events: none;
   font: 400 12px var(--display); color: rgba(255, 255, 255, 0.7); text-shadow: 0 2px 0 #000; }
 @media (prefers-reduced-motion: reduce) { .toast, #ui button, .toggle input::before { transition: none; } .tap-start .blink { animation: none; } }
 </style>
