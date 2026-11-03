@@ -1,0 +1,163 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fairy-Probe</title>
+<style>body{font:13px/1.35 ui-monospace,monospace;margin:12px;background:#111;color:#ddd}b{color:#fc6}.ok{color:#7d7}.no{color:#f77}</style>
+<h3>Fairy-Stockfish-Probe (BlockMatt-Spike)</h3>
+<p>?load=url|embed · ?sw=1 (Service Worker setzt COOP/COEP) · Ergebnis unten, Gesamtzeit am Ende.</p>
+<pre id="out"></pre>
+<script>
+// Wegwerf-Probe: lädt fairy-stockfish-nnue.wasm, prüft Isolation, Variante „raumziel“, Zeiten. Ergebnis in window.__result.
+const Q = new URLSearchParams(location.search);
+const PKG = './';
+const R = window.__result = { ua: navigator.userAgent, steps: [] };
+const out = document.getElementById('out');
+const say = (s, cls) => { out.insertAdjacentHTML('beforeend', `<span class="${cls ?? ''}">${s.replace(/</g, '&lt;')}</span>\n`); };
+const step = (name, data) => { R.steps.push({ name, ...data }); say(`${name}: ${JSON.stringify(data)}`, data.error ? 'no' : 'ok'); };
+
+const INI = `[raumziel:chess]
+extinctionValue = loss
+extinctionPieceTypes = *
+extinctionPieceCount = 1
+
+[golem:raumziel]
+customPiece1 = g:KN
+`;
+// FEN: [Name, FEN, Erwartung]
+const POSITIONS = [
+  ['P1 Weiß schlägt letzte Figur trotz Damenverlust', '4k3/3n4/8/8/8/8/8/3QK3 w - - 0 1', 'raumziel: d1d7 (sofort gewonnen); chess: nicht d1d7 (Kxd7 = Remis)'],
+  ['P2 Schwarz meidet Tausch der letzten Figur', '7k/8/1n6/8/Q7/1K6/7P/8 b - - 0 1', 'chess: b6a4 (Kxa4 = Remis, h-Bauer + Eckkönig); raumziel: nicht b6a4'],
+  ['P3 Schwarz hat nur noch den König, Schwarz am Zug', '4k3/8/8/8/8/8/8/R3K3 b - - 0 1', 'raumziel: Partie schon aus (mate 0 / bestmove (none)); chess: normale Züge'],
+];
+
+async function boot() {
+  const t0 = performance.now();
+  R.env = { crossOriginIsolated: self.crossOriginIsolated, sab: typeof SharedArrayBuffer, sw: !!navigator.serviceWorker?.controller };
+  try { new WebAssembly.Memory({ initial: 1, maximum: 2, shared: true }); R.env.sharedMemory = true; }
+  catch (e) { R.env.sharedMemory = String(e); }
+  step('Umgebung', R.env);
+  // Gegenprobe ohne Isolation: SAB-Konstruktor aus geteiltem WASM-Speicher „ausleihen“ (scheitert erwartbar beim Weiterreichen an Worker)
+  if (Q.get('sabpoly') === '1' && typeof SharedArrayBuffer === 'undefined') {
+    self.SharedArrayBuffer = new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true }).buffer.constructor;
+    try { new Worker(URL.createObjectURL(new Blob([''], { type: 'text/javascript' }))).postMessage(new WebAssembly.Memory({ initial: 1, maximum: 1, shared: true })); R.env.postShared = true; }
+    catch (e) { R.env.postShared = String(e); }
+    step('SAB-Leihgabe', { postShared: R.env.postShared });
+  }
+
+  if (Q.get('sw') === '1' && !self.crossOriginIsolated) {
+    if (!('serviceWorker' in navigator)) { step('SW', { error: 'kein serviceWorker' }); return; }
+    if (!navigator.serviceWorker.controller) {
+      if (sessionStorage.getItem('sw-reload')) { step('SW', { error: 'nach Neuladen noch keine Kontrolle' }); return; }
+      // Scope '/': Worker-Skripte außerhalb von /spike/fairy/ laufen sonst am SW vorbei (eigene Scope-Zuordnung) → COEP blockt
+      await navigator.serviceWorker.register('sw-coi.js', Q.get('scope') === 'root' ? { scope: '/' } : undefined);
+      await navigator.serviceWorker.ready;
+      sessionStorage.setItem('sw-reload', '1');
+      R.reloading = true;
+      location.reload();
+      return;
+    }
+    step('SW', { error: 'Seite vom SW kontrolliert, aber nicht isoliert' });
+  }
+
+  // Laden: per URL (Pages-Fassung) oder wie die Einzeldatei aus „eingebetteten“ Bytes (hier vorher geholt, im Spiel Base64)
+  const mode = Q.get('load') ?? 'url';
+  const tLoad = performance.now();
+  let opts = {};
+  if (mode === 'embed') {
+    const [js, wjs, wasm] = await Promise.all([
+      fetch(PKG + 'stockfish.js').then((r) => r.text()),
+      fetch(PKG + 'stockfish.worker.js').then((r) => r.text()),
+      fetch(PKG + 'stockfish.wasm').then((r) => r.arrayBuffer()),
+    ]);
+    const jsBlob = new Blob([js], { type: 'text/javascript' });
+    const workerUrl = URL.createObjectURL(new Blob([wjs], { type: 'text/javascript' }));
+    await new Promise((ok, no) => { const s = document.createElement('script'); s.src = URL.createObjectURL(jsBlob); s.onload = ok; s.onerror = no; document.head.append(s); });
+    opts = { wasmBinary: new Uint8Array(wasm), mainScriptUrlOrBlob: jsBlob, locateFile: (f) => (f.endsWith('.worker.js') ? workerUrl : f) };
+  } else {
+    await new Promise((ok, no) => { const s = document.createElement('script'); s.src = PKG + 'stockfish.js'; s.onload = ok; s.onerror = no; document.head.append(s); });
+    opts = { locateFile: (f) => PKG + f };
+  }
+  let sf;
+  try {
+    sf = await Promise.race([Stockfish(opts), new Promise((_, no) => setTimeout(() => no(new Error('Init-Timeout 30 s')), 30000))]);
+  } catch (e) { step('Init', { mode, error: String(e?.message ?? e) }); return; }
+  step('Init', { mode, ms: Math.round(performance.now() - tLoad) });
+
+  // UCI-Hülle
+  let listener = null; const all = [];
+  sf.addMessageListener((l) => { all.push(l); listener && listener(l); });
+  const until = (pred, ...cmds) => new Promise((ok) => {
+    const lines = [];
+    listener = (l) => { lines.push(l); if (pred(l)) { listener = null; ok(lines); } };
+    for (const c of cmds) sf.postMessage(c);
+  });
+  const ready = () => until((l) => l === 'readyok', 'isready');
+  const go = async (fen, variant, goCmd, extra = []) => {
+    await until((l) => l === 'readyok', `setoption name UCI_Variant value ${variant}`, ...extra, 'ucinewgame', 'isready');
+    const t = performance.now();
+    const lines = await until((l) => l.startsWith('bestmove'), `position fen ${fen}`, goCmd);
+    const ms = Math.round(performance.now() - t);
+    const info = lines.filter((l) => / score /.test(l)).at(-1) ?? '';
+    const pick = (re) => (re.exec(info) ?? [])[1];
+    return { ms, best: lines.at(-1).split(' ')[1], score: pick(/score ((?:cp|mate) -?\d+)/), depth: +pick(/ depth (\d+)/) || 0,
+      nodes: +pick(/ nodes (\d+)/) || 0, nps: +pick(/ nps (\d+)/) || 0, strings: lines.filter((l) => l.startsWith('info string')) };
+  };
+
+  const uci = await Promise.race([until((l) => l === 'uciok', 'uci'), new Promise((ok) => setTimeout(ok, 20000))]);
+  if (!uci) { step('UCI', { error: 'kein uciok nach 20 s (Engine hängt)' }); return; }
+  const opt = (n) => uci.find((l) => l.startsWith(`option name ${n} type`)) ?? null;
+  step('UCI', { id: uci.find((l) => l.startsWith('id name')), skill: opt('Skill Level'), elo: opt('UCI_Elo'), limit: opt('UCI_LimitStrength'),
+    nnue: opt('Use NNUE'), evalFile: opt('EvalFile'), threads: opt('Threads'), variants: (opt('UCI_Variant') ?? '').split(' var ').length - 1 });
+
+  // Variante laden: erst per Dateisystem (load <Pfad>), Gegenprobe Here-Doc (load <<EOF, ohne FS)
+  sf.FS.writeFile('/blockmatt.ini', INI);
+  let lines = await until((l) => l === 'readyok', 'load /blockmatt.ini', 'isready');
+  const uci2 = await until((l) => l === 'uciok', 'uci');
+  const combo = (uci2.find((l) => l.startsWith('option name UCI_Variant')) ?? '');
+  step('load Datei', { raumziel: / var raumziel\b/.test(combo), golem: / var golem\b/.test(combo), out: lines.filter((l) => l !== 'readyok') });
+  lines = await until((l) => l === 'readyok', 'load <<END', ...INI.replaceAll('raumziel', 'raumziel2').replaceAll('golem', 'golem2').split('\n'), 'END', 'isready');
+  const uci3 = await until((l) => l === 'uciok', 'uci');
+  step('load Here-Doc', { raumziel2: / var raumziel2\b/.test(uci3.find((l) => l.startsWith('option name UCI_Variant')) ?? ''), out: lines.filter((l) => l !== 'readyok') });
+
+  // Raumziel verstanden?
+  for (const [name, fen, expect] of POSITIONS) {
+    const res = {};
+    for (const v of ['chess', 'raumziel']) {
+      const r = await go(fen, v, 'go depth 12');
+      res[v] = `${r.best} (${r.score}, d${r.depth}, ${r.ms} ms)${r.strings.length ? ' ' + r.strings.join(' | ') : ''}`;
+    }
+    step(name, { fen, expect, ...res });
+  }
+
+  // Sonderfigur: Golem g = König + Springer (Betza KN) auf d5
+  const perft = await (async () => {
+    await until((l) => l === 'readyok', 'setoption name UCI_Variant value golem', 'ucinewgame', 'isready');
+    return until((l) => /^Nodes searched/.test(l), 'position fen 4k3/8/8/3g4/8/8/8/4K2R b - - 0 1', 'go perft 1');
+  })();
+  const golemMoves = perft.filter((l) => /^d5\w+: 1$/.test(l)).map((l) => l.slice(2, 4));
+  const g = await go('4k3/8/8/3g4/8/8/8/4K2R b - - 0 1', 'golem', 'go depth 10');
+  step('Golem (customPiece1 = g:KN)', { zuegeVonD5: golemMoves.length, ziele: golemMoves.join(' '), perft: perft.at(-1), best: g.best, score: g.score });
+
+  // Zeiten: Startstellung, Mittelspiel-Stellung
+  const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+  const MID = 'r1bq1rk1/pp2bppp/2n1pn2/3p4/2PP4/2N1PN2/PP3PPP/R2QKB1R w KQ - 0 8';
+  const times = {};
+  for (const v of ['chess', 'raumziel']) {
+    for (const d of [4, 8, 12]) { const r = await go(MID, v, `go depth ${d}`); times[`${v} depth ${d}`] = `${r.ms} ms, ${r.nodes} Kn, ${Math.round(r.nps / 1000)} knps, ${r.best}`; }
+    const r = await go(MID, v, 'go movetime 500');
+    times[`${v} movetime 500`] = `${r.ms} ms, d${r.depth}, ${Math.round(r.nps / 1000)} knps, ${r.best}`;
+  }
+  const s0 = await go(START, 'raumziel', 'go movetime 300', ['setoption name Skill Level value 0']);
+  times['raumziel Skill 0 movetime 300'] = `${s0.ms} ms, ${s0.best}`;
+  const e8 = await go(START, 'raumziel', 'go movetime 300', ['setoption name Skill Level value 20', 'setoption name UCI_LimitStrength value true', 'setoption name UCI_Elo value 800']);
+  times['raumziel UCI_Elo 800 movetime 300'] = `${e8.ms} ms, ${e8.best}`;
+  step('Zeiten', times);
+  await until((l) => l === 'readyok', 'setoption name UCI_LimitStrength value false', 'isready');
+
+  R.totalMs = Math.round(performance.now() - t0);
+  R.unhandled = all.filter((l) => /error|abort|exception/i.test(l));
+  step('fertig', { totalMs: R.totalMs, auffaellig: R.unhandled });
+}
+
+boot().catch((e) => step('Abbruch', { error: String(e?.stack ?? e) })).finally(() => { if (!R.reloading) R.done = true; });
+</script>
