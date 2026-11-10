@@ -4,7 +4,7 @@
 // sonst löscht die eine Fassung beim Aktivieren den Speicher der anderen
 const SCOPE = new URL(self.registration.scope).pathname;
 const PREFIX = 'blockmatt-' + SCOPE + '#'; // '#' trennt: '…/blockmatt/v2/#…' beginnt nicht mit '…/blockmatt/#'
-const CACHE = PREFIX + '031a3fd1806e';
+const CACHE = PREFIX + 'd50b4a473114';
 const FILES = ['./', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
