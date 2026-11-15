@@ -4,9 +4,9 @@
 // sonst löscht die eine Fassung beim Aktivieren den Speicher der anderen
 const SCOPE = new URL(self.registration.scope).pathname;
 const PREFIX = 'blockmatt-' + SCOPE + '#'; // '#' trennt: '…/blockmatt/v2/#…' beginnt nicht mit '…/blockmatt/#'
-const VERSION = '448f8ffff464'; // build.mjs: Hash der Seite
+const VERSION = '0155330a51b7'; // build.mjs: Hash der Seite
 const CACHE = PREFIX + VERSION;
-const FILES = ['./', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', "a/sf-js.227cc5d43649.js", "a/sf-wasm.57ac2d72312a.wasm", "a/dmusic-menu.32e63a3a88e0.mp3", "a/dmusic-glide.886bc5e537f0.mp3", "a/dmusic-gardens.bb77c3c4e8db.mp3", "a/dmusic-pixel.44ce9183a4bc.mp3", "a/dmusic-gate.c10f49a0ed8e.mp3", "a/dmusic-molten.5d168c19ef57.mp3", "a/dmusic-seven.cb3fc8e4df65.mp3", "a/fanfare.59900f14ed2b.mp3", "a/ohh.a145726ac00a.mp3", "a/intro-music.5c855382db0d.mp3"];
+const FILES = ['./', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png', "a/sf-js.227cc5d43649.js", "a/sf-wasm.57ac2d72312a.wasm", "a/fsf-js.69c85ff09cb6.js", "a/fsf-wasm.0d49b748edf6.wasm", "a/dmusic-menu.32e63a3a88e0.mp3", "a/dmusic-glide.886bc5e537f0.mp3", "a/dmusic-gardens.bb77c3c4e8db.mp3", "a/dmusic-pixel.44ce9183a4bc.mp3", "a/dmusic-gate.c10f49a0ed8e.mp3", "a/dmusic-molten.5d168c19ef57.mp3", "a/dmusic-seven.cb3fc8e4df65.mp3", "a/fanfare.59900f14ed2b.mp3", "a/ohh.a145726ac00a.mp3", "a/intro-music.5c855382db0d.mp3"];
 
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
